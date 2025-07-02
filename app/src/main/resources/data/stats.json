@@ -1,0 +1,9 @@
+{
+  "health": 100,
+  "strength": 12,
+  "dexterity": 14,
+  "intelligence": 15,
+  "wisdom": 10,
+  "charisma": 8,
+  "movementSpeed": 5
+}

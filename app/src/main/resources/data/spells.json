@@ -1,0 +1,24 @@
+[
+  {
+    "name": "Fireball",
+    "level": 3,
+    "radiusOfEffect": 5,
+    "damage": 30,
+    "range": 20,
+    "effects": "burns enemies",
+    "buffs": "none",
+    "castTime": 1.5,
+    "cost": 10
+  },
+  {
+    "name": "Heal",
+    "level": 1,
+    "radiusOfEffect": 0,
+    "damage": 0,
+    "range": 5,
+    "effects": "restores health",
+    "buffs": "regeneration",
+    "castTime": 1.0,
+    "cost": 5
+  }
+]
