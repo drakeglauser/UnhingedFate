@@ -6,8 +6,13 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 
 public class Player implements KeyListener, MouseListener {
     private int gridX, gridY;           // Player position in grid coordinates
@@ -17,10 +22,10 @@ public class Player implements KeyListener, MouseListener {
     private final CustomPanel dungeonPanel;
     private int originX, originY;
     private final int movementRange;      // Base speed from stats.json
-    private int remainingMovement;        // How many tiles left this turn
     private boolean turnActive = false;
     private final Map<Point, List<CustomPanel.Wall>> wallsByChunk;
-    
+     private Set<Point> reachableTiles = new HashSet<>();
+
     // Player visual properties
     private final Color playerColor = Color.RED;
     private final int playerSize;       // Player sphere radius (fits in grid)
@@ -49,6 +54,7 @@ public class Player implements KeyListener, MouseListener {
         turnActive = true;
         originX    = gridX;
         originY    = gridY;
+        reachableTiles = computeReachableTiles();
         System.out.println("Turn start! You can move up to " + movementRange + " tiles from (" + originX + "," + originY + ")");
     }
 
@@ -57,8 +63,69 @@ public class Player implements KeyListener, MouseListener {
         System.out.println("Turn ended.");
         startTurn();
     }
+    public boolean isTurnActive() {
+        return turnActive;
+    }
 
-    /** Centralizes the “can I move?” + budget decrement logic. */
+    public Set<Point> getReachableTiles() {
+        return reachableTiles;
+    }
+
+private Set<Point> computeReachableTiles() {
+    Set<Point> reachable = new HashSet<>();
+
+    if (wallsByChunk == null) {
+        System.err.println("[WARN] computeReachableTiles: wallsByChunk is null; skipping movement area");
+        return reachable;
+    }
+
+    // start from the player's current tile
+    Point start = new Point(originX, originY);
+    reachable.add(start);
+
+    Queue<Point> frontier = new LinkedList<>();
+    Map<Point,Integer> distance = new HashMap<>();
+
+    frontier.add(start);
+    distance.put(start, 0);
+
+    // four cardinal directions 
+    int[][] directions = {
+        { 1,  0},
+        {-1,  0},
+        { 0,  1},
+        { 0, -1}
+    };
+
+    while (!frontier.isEmpty()) {
+        Point current = frontier.poll();
+        int d = distance.get(current);
+
+        // don’t step beyond movementRange
+        if (d >= movementRange) continue;
+
+        for (int[] dir : directions) {
+            int nx = current.x + dir[0];
+            int ny = current.y + dir[1];
+
+            // world-bounds check
+            if (!isValidPosition(nx, ny))   continue;
+            // wall check
+            if (isMovementBlocked(current.x, current.y, nx, ny)) continue;
+
+            Point neighbor = new Point(nx, ny);
+            if (!reachable.contains(neighbor)) {
+                reachable.add(neighbor);
+                distance.put(neighbor, d + 1);
+                frontier.add(neighbor);
+            }
+        }
+    }
+
+    return reachable;
+}
+
+
         private void handleMove(int dx, int dy) {
         if (!turnActive) return;
 
@@ -330,7 +397,7 @@ public class Player implements KeyListener, MouseListener {
             case KeyEvent.VK_D:
                 handleMove(1, 0);
                 break;
-            case KeyEvent.VK_E:  // “E” to end turn early
+            case KeyEvent.VK_E:  
                 endTurn();
                 break;
             default:

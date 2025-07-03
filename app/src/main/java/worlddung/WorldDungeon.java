@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.JButton;
@@ -67,7 +68,7 @@ public class WorldDungeon {
 
 class CustomPanel extends JPanel implements MouseWheelListener {
     private Player player;
-    private MinimapTracker minimapTracker;
+    private final MinimapTracker minimapTracker;
     private MinimapWindow minimapWindow;
     private double scale = 1.0;
     private int translateX = 0;
@@ -669,7 +670,7 @@ class CustomPanel extends JPanel implements MouseWheelListener {
         }
         // Calculate visible chunks
         Rectangle vr;
-        if (gameMode == GameModeManager.GameMode.PLAYER && player != null) {
+        if (gameMode == GameModeManager.GameMode.PLAYER && player != null && player.isTurnActive()) {
             Point playerWorld = player.getWorldPosition();
             vr = new Rectangle(
                 playerWorld.x - PLAYER_VIEW_RADIUS,
@@ -677,6 +678,14 @@ class CustomPanel extends JPanel implements MouseWheelListener {
                 PLAYER_VIEW_RADIUS * 2,
                 PLAYER_VIEW_RADIUS * 2
             );
+            Set<Point> area = player.getReachableTiles();
+        // translucent blue overlay; alpha = 50/255
+        g2d.setColor(new Color(  0,  0,255, 50));
+        for (Point p : area) {
+            int wx = p.x * GRID_SIZE;
+            int wy = p.y * GRID_SIZE;
+            g2d.fillRect(wx, wy, GRID_SIZE, GRID_SIZE);
+        }
         } else {
             vr = getVisibleRect();
         }
