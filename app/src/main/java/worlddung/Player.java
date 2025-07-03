@@ -14,9 +14,10 @@ public class Player implements KeyListener, MouseListener {
     private final int GRID_SIZE;        // Size of each grid cell
     private final int CENTER_X, CENTER_Y; // World center coordinates
     private final int RADIUS;           // Dungeon radius
-    
-    // Reference to the dungeon panel for collision detection and repainting
     private final CustomPanel dungeonPanel;
+    private final int movementSpeed;      // Base speed from stats.json
+    private int remainingMovement;        // How many tiles left this turn
+    private boolean turnActive = false;
     private final Map<Point, List<CustomPanel.Wall>> wallsByChunk;
     
     // Player visual properties
@@ -30,6 +31,9 @@ public class Player implements KeyListener, MouseListener {
         this.CENTER_X = centerX;
         this.CENTER_Y = centerY;
         this.RADIUS = radius;
+         this.movementSpeed      = UI.stats.movementSpeed;
+        // start the very first turn
+        startTurn();
         this.wallsByChunk = walls;
         this.playerSize = GRID_SIZE / 3; // Player fits comfortably in grid cell
         
@@ -40,7 +44,39 @@ public class Player implements KeyListener, MouseListener {
         // Find a valid starting position if center is blocked
         findValidStartingPosition();
     }
-    
+     public void startTurn() {
+        turnActive        = true;
+        remainingMovement = movementSpeed;
+        System.out.println("New turn! You have " + remainingMovement + " moves.");
+    }
+
+    /** Disables moving until next startTurn(). */
+    public void endTurn() {
+        turnActive = false;
+        System.out.println("Turn ended.");
+        startTurn();
+    }
+
+    /** Centralizes the “can I move?” + budget decrement logic. */
+    private void handleMove(int dx, int dy) {
+        if (!turnActive) {
+            // you could also flash the screen or show a message
+            return;
+        }
+        if (remainingMovement <= 0) {
+            // out of moves
+            endTurn();
+            return;
+        }
+        // only if the move actually happened do we decrement
+        if (movePlayer(dx, dy)) {
+            remainingMovement--;
+            System.out.println("Moved. " + remainingMovement + " left.");
+            if (remainingMovement == 0) {
+                endTurn();
+            }
+        }
+    }
     // Find a valid starting position near the center
     private void findValidStartingPosition() {
         // Try positions in expanding circles around center
@@ -284,19 +320,24 @@ public class Player implements KeyListener, MouseListener {
         switch (e.getKeyCode()) {
             case KeyEvent.VK_UP:
             case KeyEvent.VK_W:
-                movePlayer(0, -1);
+                handleMove(0, -1);
                 break;
             case KeyEvent.VK_DOWN:
             case KeyEvent.VK_S:
-                movePlayer(0, 1);
+                handleMove(0, 1);
                 break;
             case KeyEvent.VK_LEFT:
             case KeyEvent.VK_A:
-                movePlayer(-1, 0);
+                handleMove(-1, 0);
                 break;
             case KeyEvent.VK_RIGHT:
             case KeyEvent.VK_D:
-                movePlayer(1, 0);
+                handleMove(1, 0);
+                break;
+            case KeyEvent.VK_E:  // “E” to end turn early
+                endTurn();
+                break;
+            default:
                 break;
         }
     }
