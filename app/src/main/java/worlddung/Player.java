@@ -15,7 +15,8 @@ public class Player implements KeyListener, MouseListener {
     private final int CENTER_X, CENTER_Y; // World center coordinates
     private final int RADIUS;           // Dungeon radius
     private final CustomPanel dungeonPanel;
-    private final int movementSpeed;      // Base speed from stats.json
+    private int originX, originY;
+    private final int movementRange;      // Base speed from stats.json
     private int remainingMovement;        // How many tiles left this turn
     private boolean turnActive = false;
     private final Map<Point, List<CustomPanel.Wall>> wallsByChunk;
@@ -31,7 +32,7 @@ public class Player implements KeyListener, MouseListener {
         this.CENTER_X = centerX;
         this.CENTER_Y = centerY;
         this.RADIUS = radius;
-         this.movementSpeed      = UI.stats.movementSpeed;
+         this.movementRange      = UI.stats.movementSpeed;
         // start the very first turn
         startTurn();
         this.wallsByChunk = walls;
@@ -45,12 +46,12 @@ public class Player implements KeyListener, MouseListener {
         findValidStartingPosition();
     }
      public void startTurn() {
-        turnActive        = true;
-        remainingMovement = movementSpeed;
-        System.out.println("New turn! You have " + remainingMovement + " moves.");
+        turnActive = true;
+        originX    = gridX;
+        originY    = gridY;
+        System.out.println("Turn start! You can move up to " + movementRange + " tiles from (" + originX + "," + originY + ")");
     }
 
-    /** Disables moving until next startTurn(). */
     public void endTurn() {
         turnActive = false;
         System.out.println("Turn ended.");
@@ -58,25 +59,20 @@ public class Player implements KeyListener, MouseListener {
     }
 
     /** Centralizes the “can I move?” + budget decrement logic. */
-    private void handleMove(int dx, int dy) {
-        if (!turnActive) {
-            // you could also flash the screen or show a message
+        private void handleMove(int dx, int dy) {
+        if (!turnActive) return;
+
+        int newX = gridX + dx;
+        int newY = gridY + dy;
+        int dist = Math.abs(newX - originX) + Math.abs(newY - originY);
+
+        if (dist > movementRange) {
             return;
         }
-        if (remainingMovement <= 0) {
-            // out of moves
-            endTurn();
-            return;
-        }
-        // only if the move actually happened do we decrement
-        if (movePlayer(dx, dy)) {
-            remainingMovement--;
-            System.out.println("Moved. " + remainingMovement + " left.");
-            if (remainingMovement == 0) {
-                endTurn();
-            }
-        }
+
+        movePlayer(dx, dy);
     }
+
     // Find a valid starting position near the center
     private void findValidStartingPosition() {
         // Try positions in expanding circles around center
